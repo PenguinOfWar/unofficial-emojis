@@ -14,6 +14,7 @@
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
     "bootstrap": "^4.5.0",
+    "camelcase": "^6.0.0",
     "chalk": "^4.1.0",
     "cheerio": "^1.0.0-rc.3",
     "cli-progress": "^3.8.2",
@@ -31,6 +32,7 @@
     "jquery": "^3.5.1",
     "meow": "^5.0.0",
     "node-sass": "^4.14.1",
+    "number-to-words": "^1.2.4",
     "popper.js": "^1.16.1",
     "prettier": "^2.0.5",
     "prop-types": "^15.7.2",
@@ -46,7 +48,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "download": "node scripts/download.js"
+    "download": "node scripts/download.js",
+    "parse": "node scripts/parse.js"
   },
   "eslintConfig": {
     "extends": "react-app"

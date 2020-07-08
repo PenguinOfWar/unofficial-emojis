@@ -1,8 +1,12 @@
 import React from 'react';
 
+import { emojis } from '../../lib';
+
 import './App.scss';
 
-function App() {
+const App = () => {
+  emojis();
+
   return (
     <div className="container app">
       <div className="row">
@@ -10,6 +14,6 @@ function App() {
       </div>
     </div>
   );
-}
+};
 
 export default App;
