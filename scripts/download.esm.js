@@ -10,9 +10,7 @@ const fs = require('fs').promises;
 const download = async (opts = {}) => {
   const dest = path.resolve(opts.destination || 'emojis');
 
-  console.log(`${dest}/emojis/slackmojis/*.json`);
-
-  const emojis = glob.sync('emojis/slackmojis/**/*.json');
+  const emojis = glob.sync('src/emojis/slackmojis/**/*.json');
 
   const loading = new cliProgress.SingleBar(
     {
@@ -68,7 +66,7 @@ const download = async (opts = {}) => {
     const url = $(element).find('a').attr('href');
     const filename = $(element).find('a').attr('download');
 
-    if (!emojis.includes(`emojis/slackmojis/${name}.json`)) {
+    if (!emojis.includes(`src/emojis/slackmojis/${name}.json`)) {
       list.push({ name, url, filename });
     } else {
       fetching.increment();
@@ -114,7 +112,7 @@ const download = async (opts = {}) => {
 (async () => {
   try {
     await download({
-      destination: `${process.cwd()}/emojis/slackmojis`
+      destination: `${process.cwd()}/src/emojis/slackmojis`
     });
 
     return process.exit(0);
