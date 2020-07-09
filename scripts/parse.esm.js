@@ -49,13 +49,31 @@ const parse = async () => {
       let m;
 
       while ((m = regex.exec(exportName)) != null) {
-        exportName = exportName.replace(
-          String(m[0]),
-          ` ${converter.toWords(m[0])} `
-        );
+        exportName = exportName
+          .replace(String(m[0]), ` ${converter.toWords(m[0])} `)
+          .trim();
       }
 
-      exportName = camelCase(exportName.trim());
+      if (
+        exportName === 'delete' ||
+        exportName === 'new' ||
+        exportName === 'this' ||
+        exportName === 'var' ||
+        exportName === 'let' ||
+        exportName === 'const'
+      ) {
+        exportName = `icon ${exportName}`;
+      }
+
+      exportName = camelCase(
+        exportName
+          .replace('_', ' underscore ')
+          .trim()
+          .replace('-', ' dash ')
+          .trim()
+          .replace(',', ' ')
+          .trim()
+      );
 
       groupExport.push(exportName);
       symLinks[name] = exportName;

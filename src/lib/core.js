@@ -1,7 +1,9 @@
 import isClient from '@bagofholding/is-client';
 import debounce from 'lodash.debounce';
 
-import emojis, { ueSymLinks } from '../emojis/slackmojis';
+import { ueSymLinks } from '../emojis/slackmojis';
+
+const emojis = {};
 
 export default class Core {
   constructor() {
