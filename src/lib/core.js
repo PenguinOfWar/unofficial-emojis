@@ -1,30 +1,21 @@
 import isClient from '@bagofholding/is-client';
 import debounce from 'lodash.debounce';
 
-import { ueSymLinks } from '../emojis/slackmojis';
-
-const emojis = {};
-
 export default class Core {
-  constructor() {
-    this.links = ueSymLinks || {};
-    this.cache = {};
+  constructor(items = []) {
+    this.library = {};
 
     if (isClient()) {
       window.__UNOFFICIAL_EMOJIS_DEBUG = this;
-      this.monitor();
+      this.monitor(items);
     }
   }
 
-  get all() {
-    return this.links;
-  }
-
   get cached() {
-    return this.cache;
+    return this.library;
   }
 
-  monitor() {
+  async monitor(items = []) {
     const context = this;
     const scan = this.scan;
 
@@ -47,33 +38,7 @@ export default class Core {
   }
 
   async get(emoji) {
-    const symLink = this.links[emoji];
-
-    if (!symLink) {
-      return;
-    }
-
-    return this.cache[symLink]
-      ? this.cache[symLink]
-      : await this.import(symLink);
-  }
-
-  async import(emoji) {
-    const loader =
-      emojis[emoji] && typeof emojis[emoji] === 'function'
-        ? emojis[emoji]
-        : null;
-
-    if (!loader) {
-      console.warn(
-        `unofficial-emojis says: ${emoji} does not exist or is not a function. This usually indicates you've specified an emoji that does not exist.`
-      );
-      return {};
-    }
-
-    this.cache[emoji] = await loader();
-
-    return this.cache[emoji];
+    return this.library[emoji] ? this.library[emoji] : null;
   }
 
   async scan(context) {

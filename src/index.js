@@ -5,8 +5,9 @@ import App from './containers/App/App';
 import * as serviceWorker from './serviceWorker';
 
 import { Emojis } from './lib';
+import { iceCreamParrot, airQuotes } from './lib/emojis/slackmojis';
 
-new Emojis();
+new Emojis(['ice_cream_parrot', 'air_quotes']);
 
 ReactDOM.render(
   <React.StrictMode>
