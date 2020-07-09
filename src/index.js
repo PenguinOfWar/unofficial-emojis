@@ -4,6 +4,10 @@ import './sass/index.scss';
 import App from './containers/App/App';
 import * as serviceWorker from './serviceWorker';
 
+import { Emojis } from './lib';
+
+new Emojis();
+
 ReactDOM.render(
   <React.StrictMode>
     <App />

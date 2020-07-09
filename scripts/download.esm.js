@@ -3,6 +3,7 @@ import path from 'path';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import glob from 'glob';
+import Throttle from 'superagent-throttle';
 
 const cheerio = require('cheerio');
 const fs = require('fs').promises;
@@ -11,6 +12,13 @@ const download = async (opts = {}) => {
   const dest = path.resolve(opts.destination || 'emojis');
 
   const emojis = glob.sync('src/emojis/slackmojis/**/*.json');
+
+  let throttle = new Throttle({
+    active: true, // set false to pause queue
+    rate: 1, // how many requests can be sent every `ratePer`
+    ratePer: 1000, // number of ms in which `rate` requests may be sent
+    concurrent: 2 // how many requests can be sent concurrently
+  });
 
   const loading = new cliProgress.SingleBar(
     {
@@ -25,18 +33,80 @@ const download = async (opts = {}) => {
     cliProgress.Presets.shades_classic
   );
 
-  loading.start(100, 50);
+  const uris = [
+    'https://slackmojis.com/',
+    'https://slackmojis.com/emojis/popular',
+    'https://slackmojis.com/emojis/recent',
+    'https://slackmojis.com/categories/17-hangouts-blob-emojis',
+    'https://slackmojis.com/categories/2-logo-emojis',
+    'https://slackmojis.com/categories/3-meme-emojis',
+    'https://slackmojis.com/categories/7-party-parrot-emojis',
+    'https://slackmojis.com/categories/10-skype-emojis',
+    'https://slackmojis.com/categories/19-random-emojis'
+  ];
 
-  const request = await superagent.get('https://slackmojis.com').timeout({
-    response: 5000,
-    deadline: 60000
-  });
+  loading.start(uris.length, 0);
 
-  loading.update(100);
+  let requests = [];
+
+  const getUris = async () => {
+    return Promise.all(
+      uris.map(async uri => {
+        const request = await superagent.get(uri).use(throttle.plugin());
+
+        loading.increment();
+
+        request.uri = uri;
+
+        requests.push(request);
+      })
+    );
+  };
+
+  await getUris();
 
   loading.stop();
 
-  const $ = cheerio.load(request.text);
+  console.log(chalk.green('Finished fetching'));
+
+  let list = [];
+  let errors = [];
+
+  const fetch = async () => {
+    return Promise.all(
+      requests.map(async (request = {}) => {
+        const { uri } = request;
+
+        console.log('');
+        console.log(chalk.yellow(`Parsing page and fetching ${uri} emojis`));
+
+        const $ = cheerio.load(request.text);
+
+        const emojiSelector = $('li .emoji');
+
+        console.log('');
+        console.log(chalk.green(`Found ${emojiSelector.length} on ${uri}!`));
+
+        console.log('');
+        console.log(chalk.yellow(`Compiling emojis from ${uri}...`));
+
+        emojiSelector.each((_index, element) => {
+          const name = $(element).attr('title');
+          const url = $(element).find('a').attr('href');
+          const filename = $(element).find('a').attr('download');
+
+          if (!emojis.includes(`src/emojis/slackmojis/${name}.json`)) {
+            list.push({ name, url, filename });
+          }
+        });
+
+        console.log('');
+        console.log(chalk.green('Done!'));
+      })
+    );
+  };
+
+  await fetch();
 
   const fetching = new cliProgress.SingleBar(
     {
@@ -52,56 +122,59 @@ const download = async (opts = {}) => {
     cliProgress.Presets.shades_classic
   );
 
-  const emojiSelector = $('li .emoji');
-
-  fetching.start(emojiSelector.length, 0, {
+  fetching.start(list.length, 0, {
     filename: 'N/A'
   });
 
-  let list = [];
-  let errors = [];
+  const fetchData = async () => {
+    console.log('');
+    console.log(
+      chalk.bgYellow.black(`Beginning mass fetch of ${list.length} records...`)
+    );
 
-  emojiSelector.each((_index, element) => {
-    const name = $(element).attr('title');
-    const url = $(element).find('a').attr('href');
-    const filename = $(element).find('a').attr('download');
+    return Promise.all(
+      list.map(async item => {
+        const { name, url, filename } = item;
 
-    if (!emojis.includes(`src/emojis/slackmojis/${name}.json`)) {
-      list.push({ name, url, filename });
-    } else {
-      fetching.increment();
-    }
-  });
+        try {
+          fetching.update({ filename: chalk.green(url) });
 
-  for (const item of list) {
-    const { name, url, filename } = item;
-    fetching.update({ filename: chalk.green(filename) });
+          const request = await superagent
+            .get(`https://slackmojis.com${url}`)
+            .use(throttle.plugin());
 
-    try {
-      const request = await superagent
-        .get(`https://slackmojis.com${url}`)
-        .timeout({
-          response: 5000,
-          deadline: 60000
-        });
+          const { body } = request;
 
-      const { body } = request;
+          const buffer = Buffer.from(body);
+          const base64 = buffer.toString('base64');
 
-      const buffer = Buffer.from(body);
-      const base64 = buffer.toString('base64');
+          await fs.writeFile(
+            `${dest}/${name}.json`,
+            JSON.stringify({ name, url, filename, base64 }, null, 2)
+          );
+        } catch (error) {
+          errors.push({
+            name,
+            code: error.code,
+            errno: error.errno,
+            uri: `https://slackmojis.com${url}`
+          });
+        }
 
-      await fs.writeFile(
-        `${dest}/${name}.json`,
-        JSON.stringify({ name, url, filename, base64 }, null, 2)
-      );
-    } catch (error) {
-      errors.push({ name, error });
-    }
+        fetching.increment();
+      })
+    );
+  };
 
-    fetching.increment();
-  }
+  await fetchData();
 
-  console.log(chalk.green('Done!'));
+  fetching.stop();
+
+  console.log('');
+  console.log('');
+  console.log('===');
+  console.log('');
+  console.log(chalk.green('Finished. Bye!'));
 
   if (errors.length) {
     console.log(chalk.yellow('Errors were encountered during download'));

@@ -1,4 +1,5 @@
 import isClient from '@bagofholding/is-client';
+import debounce from 'lodash.debounce';
 
 import emojis, { ueSymLinks } from '../emojis/slackmojis';
 
@@ -7,7 +8,10 @@ export default class Core {
     this.links = ueSymLinks || {};
     this.cache = {};
 
-    if (isClient()) window.__UNOFFICIAL_EMOJIS_DEBUG = this;
+    if (isClient()) {
+      window.__UNOFFICIAL_EMOJIS_DEBUG = this;
+      this.monitor();
+    }
   }
 
   get all() {
@@ -16,6 +20,28 @@ export default class Core {
 
   get cached() {
     return this.cache;
+  }
+
+  monitor() {
+    const context = this;
+    const scan = this.scan;
+
+    const mutationObserver = new MutationObserver(
+      debounce(() => scan(context), 100, {
+        leading: true,
+        trailing: false,
+        maxWait: 1000
+      })
+    );
+
+    mutationObserver.observe(document.documentElement, {
+      attributes: true,
+      characterData: true,
+      childList: true,
+      subtree: true,
+      attributeOldValue: true,
+      characterDataOldValue: true
+    });
   }
 
   async get(emoji) {
@@ -48,7 +74,7 @@ export default class Core {
     return this.cache[emoji];
   }
 
-  async scan() {
+  async scan(context) {
     if (!isClient()) {
       return;
     }
@@ -60,7 +86,7 @@ export default class Core {
 
       if (!ueIcon) return;
 
-      const emoji = await this.get(ueIcon);
+      const emoji = await context.get(ueIcon);
 
       if (!emoji || typeof emoji !== 'object') {
         return;
