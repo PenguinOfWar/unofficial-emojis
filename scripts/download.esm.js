@@ -11,7 +11,7 @@ const fs = require('fs').promises;
 const download = async (opts = {}) => {
   const dest = path.resolve(opts.destination || 'emojis');
 
-  const emojis = glob.sync('src/emojis/slackmojis/**/*.json');
+  const emojis = glob.sync('src/lib/emojis/slackmojis/**/*.json');
 
   let throttle = new Throttle({
     active: true, // set false to pause queue
@@ -95,7 +95,7 @@ const download = async (opts = {}) => {
           const url = $(element).find('a').attr('href');
           const filename = $(element).find('a').attr('download');
 
-          if (!emojis.includes(`src/emojis/slackmojis/${name}.json`)) {
+          if (!emojis.includes(`src/lib/emojis/slackmojis/${name}.json`)) {
             list.push({ name, url, filename });
           }
         });
@@ -185,7 +185,7 @@ const download = async (opts = {}) => {
 (async () => {
   try {
     await download({
-      destination: `${process.cwd()}/src/emojis/slackmojis`
+      destination: `${process.cwd()}/src/lib/emojis/slackmojis`
     });
 
     return process.exit(0);

@@ -76,6 +76,7 @@ const parse = async () => {
       );
 
       groupExport.push(exportName);
+
       symLinks[name] = exportName;
 
       if (!cached[exportName]) {
