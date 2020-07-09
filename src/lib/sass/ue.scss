@@ -1,0 +1,27 @@
+.ue {
+  display: inline-block;
+
+  .ue-emoji {
+    background-position: 50%;
+    background-repeat: no-repeat;
+    background-size: contain;
+    color: transparent;
+    display: block;
+
+    &::selection {
+      color: transparent;
+    }
+  }
+
+  .ue-sr {
+    border: 0;
+    clip: rect(0, 0, 0, 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+}

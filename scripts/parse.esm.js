@@ -1,5 +1,3 @@
-import superagent from 'superagent';
-import path from 'path';
 import chalk from 'chalk';
 import cliProgress from 'cli-progress';
 import glob from 'glob';
@@ -26,8 +24,10 @@ const parse = async () => {
   );
 
   if (emojis.length) {
-    let list = [];
     let file = [];
+    let groupExport = [];
+    let symLinks = {};
+
     let cached = {};
 
     parsing.start(emojis.length, 0, {
@@ -57,11 +57,15 @@ const parse = async () => {
 
       exportName = camelCase(exportName.trim());
 
-      list.push({ name, exportName });
+      groupExport.push(exportName);
+      symLinks[name] = exportName;
 
       if (!cached[exportName]) {
         file.push(
-          `export { default as ${exportName} } from './${name}.json';\n`
+          `export const ${exportName} = async () =>
+            await import(
+              /* webpackChunkName: "emojis/${exportName}" */ './${name}.json'
+            );\n`
         );
 
         cached[exportName] = true;
@@ -69,10 +73,13 @@ const parse = async () => {
         console.log(chalk.blue(`Skipping ${exportName}`));
       }
 
-      return parsing.increment();
+      parsing.increment();
+
+      return true;
     });
 
-    file.push(`export const ueFullList = ${JSON.stringify(list)};`);
+    file.push(`export const ueSymLinks = ${JSON.stringify(symLinks)};\n`);
+    file.push(`export default { ${[...new Set(groupExport)].join(',')} };`);
 
     await fs.writeFile(
       `${process.cwd()}/src/emojis/slackmojis/index.js`,

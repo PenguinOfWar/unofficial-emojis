@@ -1,1 +1,1 @@
-export {default as emojis} from './core';
+export { default as Emojis } from './core';
